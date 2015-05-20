@@ -1,7 +1,9 @@
 # Visualizing Energy Consumption at Harvard University
 
-## Disclaimer
+### Disclaimer
 The energy consumption data in this visualization is synthetic. 
+
+### Authors
 
 Benjamin Norman |
 Bing Wang |
