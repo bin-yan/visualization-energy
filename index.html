@@ -66,9 +66,11 @@
 
 
         <div class="row">
-            <p> The following visualization displays the energy consumption of 151 buildings
+            <p> The following visualization displays the <b>synthetic</b> energy consumption of 151 buildings
                 at Harvard. | <a href="#" id="Read_me" data-toggle="modal"
                                  data-target="#readMeModal">Read me</a> |
+                <a href="#" id="disclaimer" data-toggle="modal"
+                   data-target="#disclaimerModal">Disclaimer</a> |
                 <a href="https://youtu.be/AGnx9alurKk" target="_blank" id="Youtube_demo">Youtube demo</a>
             </p>
         </div>
@@ -84,6 +86,23 @@
                         Use the control bar to filter buildings and select energy type. <br>
                         Select one building in the map or in the ranking chart. <br>
                         Hover a label or chart title for more information.
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="disclaimerModal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                        <h4 class="modal-title" >Disclaimer</h4>
+                    </div>
+                    <div class="modal-body" align="left">
+                        All the energy consumption is synthetic.
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
