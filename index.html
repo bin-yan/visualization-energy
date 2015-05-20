@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>Harvard University Energy Consumption</title>
+
+
+    <!-- ADD Libraries-->
+    <script src="libs/d3/d3.min.js" charset="utf-8"></script>
+    <script src="libs/jquery/jquery-2.1.1.min.js" charset="utf-8"></script>
+    <script src="libs/bootstrap/js/bootstrap.min.js" charset="utf-8"></script>
+    <script src="libs/queue/queue.v1.min.js"></script>
+    <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
+
+    <!--Stylesheets-->
+    <link rel="stylesheet" type="text/css" href="libs/bootstrap/css/bootstrap.min.css">
+
+    <!-- Get some nice font-->
+    <link href='http://fonts.googleapis.com/css?family=PT+Sans:400,700' rel='stylesheet' type='text/css'>
+
+    <!-- add own vis classes-->
+    <script src = "js/mapvis.js"></script>
+    <script src = "js/energyvis.js"></script>
+    <script src = "js/weathervis.js"></script>
+    <script src = "js/rankvis.js"></script>
+    <script src = "js/explore1vis.js"></script>
+    <script src="js/toastr.js"></script>
+
+
+    <!-- add own stylesheet-->
+    <link rel="stylesheet" type="text/css" href="css/myStyle.css">
+    <link href="css/toastr.css" rel="stylesheet" type="text/css" />
+
+    <!-- add local functions-->
+    <script type="text/javascript">
+
+        function SelectTab(id)
+        {
+            if(id == 1)
+            {
+                document.getElementById('tab1').style.display = "block";
+                document.getElementById('tab2').style.display = "none";
+            }
+            if(id == 2)
+            {
+                document.getElementById('tab1').style.display = "none";
+                document.getElementById('tab2').style.display = "block";
+            }
+        }
+
+        function tooltipText() {
+            return "test";
+        }
+
+    </script>
+
+</head>
+
+
+
+<body>
+<div class="container" style="text-align :center">
+
+    <div style="background-color: white; padding-bottom: 0px" class="navbar-fixed-top">
+        <h1>Visualizing Energy Consumption at Harvard University</h1>
+
+
+        <div class="row">
+            <p> The following visualization displays the energy consumption of 151 buildings
+                at Harvard. | <a href="#" id="Read_me" data-toggle="modal"
+                                 data-target="#readMeModal">Read me</a> |
+                <a href="https://youtu.be/AGnx9alurKk" target="_blank" id="Youtube_demo">Youtube demo</a>
+            </p>
+        </div>
+
+        <div class="modal fade" id="readMeModal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                        <h4 class="modal-title" id="myModalLabel">Instructions</h4>
+                    </div>
+                    <div class="modal-body" align="left">
+                        Use the control bar to filter buildings and select energy type. <br>
+                        Select one building in the map or in the ranking chart. <br>
+                        Hover a label or chart title for more information.
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+
+            <form id="form_opt" class="form-inline">
+
+                <label id = "Show_buildings_with_data_of" class="control-label gray-tooltip">Show buildings with data of:</label>
+                <select id="building_opt" class="form-control selectWidth controls">
+                    <option value="electric" selected>Electric</option>
+                    <option value="chilled water">Chilled Water</option>
+                    <option value="steam">Steam</option>
+                    <option value="all">All Data</option>
+                </select>
+
+                <label id = "Select_energy_type" class="control-label gray-tooltip">Select energy type:</label>
+                <select id="energy_opt" class="form-control selectWidth controls">
+                    <option value="electric" selected>Electric</option>
+                    <option value="chilled water">Chilled Water</option>
+                    <option value="steam">Steam</option>
+                </select>
+
+                <label id = "Filter_buildings_by_function" class="control-label gray-tooltip" >Filter buildings by function:</label>
+                <select id="function_opt" class="form-control selectWidth controls">
+                    <option value="all" selected>All</option>
+                    <option value="atheletics">Atheletics</option>
+                    <option value="dining service">Dining Service</option>
+                    <option value="dormitory">Dormitory</option>
+                    <option value="gym">Gym</option>
+                    <option value="lab">Lab</option>
+                    <option value="lab and classroom">Lab and Classroom</option>
+                    <option value="library">Library</option>
+                    <option value="office">Office</option>
+                    <option value="office and classroom">Office and Classroom</option>
+                    <option value="residence hall">Residence hall</option>
+                    <option value="residential">Residential</option>
+                </select>
+
+            </form>
+        </div>
+    <hr style="margin-top: 15px; margin-bottom: 0px">
+
+    </div>
+
+    <div class="row" style="margin-top: 165px">
+
+        <div class="col-md-8"><span id="Map" class = "gray-tooltip-right">Map</span></div>
+        <div class="col-md-4">
+            <form class="form-inline">
+                <span id="Annual_Energy_Ranking" class = "gray-tooltip-left">Ranking | </span>
+                <label id = "Sort_ranking_by" class="gray-tooltip">Sort by:</label>
+                <select id="rank_opt" class="form-control selectWidth controls input-sm">
+                    <option value="energyUse" selected>Energy use</option>
+                    <option value="buildingName">Building name</option>
+                </select>
+            </form>
+        </div>
+    </div>
+
+    <div class="row" style="margin-top: 10px">
+
+        <div class="col-md-8" id="mapVis">
+        </div>
+
+        <div class="col-lg-4 col-md-4 content" id="rankVis">
+
+        </div>
+
+    </div>
+
+
+    <div class="row">
+        <nav>
+            <ul class="pager">
+                <span id="Energy_Use_and_Weather" class = "controls subtitle gray-tooltip">Energy Use and Weather: </span>
+                <li><a href="#" onClick="SelectTab(1)">Basic</a></li>
+                <li><a href="#" onClick="SelectTab(2)">Explorative</a></li>
+            </ul>
+        </nav>
+    </div>
+
+
+    <!--a href="#" class = "nav-tab" onClick="javascript:SelectTab(1)">Tab 1</a> and <a href="#" onClick="javascript:SelectTab(2)">Tab 2</a-->
+
+
+    <div class="row" id="tab1" style="display:block;">
+
+        <div class="col-md-8" id="energyVis">
+            <span id="Monthly_Energy_Use" class = "gray-tooltip">
+            <span >Monthly Energy Use - </span>
+            <span id="BuildingName" style="text-transform:capitalize">BuildingName</span>
+            <span> - </span>
+            <span id="EnergyType" style="text-transform:capitalize">>EnergyType</span>
+                </span>
+
+        </div>
+
+        <div class="col-md-4" id="tempVis">
+        </div>
+        <div class="col-md-4" id="solarVis">
+        </div>
+        <div class="col-md-4" id="windVis">
+        </div>
+
+    </div>
+
+    <div class="row" id="tab2" style="display:block;">
+        <div class="col-md-8" id="explore1Vis">
+            <form class="form-inline" style="text-transform:capitalize">
+                <span id="Monthly_energy_use_vs" class = "gray-tooltip">
+                <span id="buildingName_explore1Vis">Gund Hall</span>
+                <span> - Monthly energy use vs.</span>
+                    </span>
+                <select id="explore1Vis_x_opt"  class="form-control selectWidth controls" style="text-transform:capitalize">
+                    <option value ="temperature" >temperature</option>
+                    <option value ="dehumidification">dehumidification</option>
+                    <option value="cooling degrees" selected>cooling degrees</option>
+                    <option value="heating degrees">heating degrees</option>
+                    <option value="solar radiation">solar radiation</option>
+                    <option value="wind speed">wind speed</option>
+                </select>
+            </form>
+        </div>
+        <div class="col-md-4" >
+            <div><br>Linear Regression Results</div>
+            <div align = "left" id = "explore1Equation"></div>
+            <hr>
+            <div align = "left">
+                The R2 coefficient of determination is a statistical measure of how well the regression
+                line approximates the real data points. An R2 of 1 indicates that the regression line perfectly fits
+                the data.
+                <hr>
+                According to our observations, electric consumption does not have a strong linear relationship with weather.
+                Chilled water consumption is strongly correlated to cooling degrees, and steam to heating degrees. Read
+                <a href = "http://nbviewer.ipython.org/github/cs109-energy/cs109-energy.github.io/blob/master/iPython/Data%20Wrangling.ipynb" target="_blank">here</a>
+                for the definition of cooling and heating degrees.
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    $(function(){ // this function is called after the HTML document is fully loaded
+
+        //tooltip
+        placeTooltip();
+
+        // variables keeping global knowledge of the data
+        var defaultBuilding = "Gund Hall";
+        var monthlyEnergy = [];
+        var weather = [];
+        var option = {"buildingName": defaultBuilding, "buildingEnergyType": '', "energyType": '', "buildingFunction": '', "sortType": ''};
+        var buildingLocation = [];
+
+
+        // call this function after Data is loaded, reformatted and bound to the variables
+        var initVis = function(){
+
+            // Read selection values
+            d3.select("#energy_opt").property('disabled', true);
+            readOption();
+            d3.select("#BuildingName").text(option.buildingName);
+            d3.select("#EnergyType").text(option.energyType);
+            d3.select("#buildingName_explore1Vis").text(option.buildingName);
+
+            //Create an eventHandler  --> DONE :)
+            var MyEventHandler = new Object();
+
+            //Instantiate all Vis Objects here
+            var map_vis = new MapVis(d3.select("#mapVis"), monthlyEnergy, option, MyEventHandler);
+            var rank_vis = new RankVis(d3.select("#rankVis"), monthlyEnergy, option, MyEventHandler);
+            var energy_vis = new EnergyVis(d3.select("#energyVis"), monthlyEnergy, option, MyEventHandler);
+
+            var temp_vis = new WeatherVis(d3.select("#tempVis"), weather, "Temperature", MyEventHandler);
+            var solar_vis = new WeatherVis(d3.select("#solarVis"), weather, "Solar", MyEventHandler);
+            var wind_vis = new WeatherVis(d3.select("#windVis"), weather, "Wind", MyEventHandler);
+
+            var explore1_vis = new Explore1Vis(d3.select("#explore1Vis"), d3.select("#explore1Equation"), monthlyEnergy, weather, option);
+
+            // Hide a block
+            document.getElementById('tab2').style.display = "none";
+
+            // bind the eventHandler to the Vis Objects
+            $(MyEventHandler).bind("selectionChanged", function (event, buildingName) {
+                //call the change function on each vis that needs to change
+                map_vis.onSelectionChange(buildingName);
+
+                //Bin added
+                option.buildingName = buildingName;
+
+                // prevent selected building does not have the selected energy type
+                if(!monthlyEnergy[option.buildingName][option.energyType]) {
+                    option.buildingName = defaultBuilding;
+                }
+
+                energy_vis.onSelectionChange(option);
+                explore1_vis.onSelectionChange();
+                rank_vis.onSelectionChange();
+                d3.select("#BuildingName").text(option.buildingName);
+                d3.select("#buildingName_explore1Vis").text(option.buildingName);
+
+
+                // Animate scroll
+                var top = rank_vis.getYPosition(buildingName) - 320;
+                if (top < 0) top = 0;
+                $("#rankVis").animate({ scrollTop: top} );
+
+            });
+
+
+            // Listen to selection changes
+            d3.select("#form_opt").on("change", function() {
+                // Listen to building selection
+                if (d3.select("#building_opt").property('value') != "all") {
+                    d3.select("#energy_opt").property('value', d3.select("#building_opt").property('value'));
+                    d3.select("#energy_opt").property('disabled', true);
+                }
+                else {
+                    d3.select("#energy_opt").property('disabled', false);
+                }
+
+
+                readOption();
+
+                // prevent selected building does not have the selected energy type
+                if(!monthlyEnergy[option.buildingName][option.energyType]) {
+                    option.buildingName = defaultBuilding;
+
+
+                    toastr.options = {
+                        "closeButton": false,
+                        "debug": false,
+                        "newestOnTop": false,
+                        "progressBar": false,
+                        "positionClass": "toast-top-left",
+                        "preventDuplicates": false,
+                        "onclick": null,
+                        "showDuration": "300",
+                        "hideDuration": "1000",
+                        "timeOut": "3000",
+                        "extendedTimeOut": "1000",
+                        "showEasing": "swing",
+                        "hideEasing": "linear",
+                        "showMethod": "fadeIn",
+                        "hideMethod": "fadeOut"
+                    }
+
+                    toastr.info('Selected building does not have selected energy type.', 'Reset to default building.')
+                }
+
+                //pass the options selected to the onSelectionChange methods for each vis to update them based on selection
+                energy_vis.onSelectionChange(option);
+                map_vis.onSelectionChange(option.buildingName);
+                explore1_vis.onSelectionChange();
+                rank_vis.onSelectionChange();
+
+
+                if (option.buildingName != "null") {
+                    d3.select("#BuildingName").text(option.buildingName);
+                }
+                else {
+                    d3.select("#BuildingName").text("No Building Selected");
+                }
+                d3.select("#EnergyType").text(option.energyType);
+                d3.select("#buildingName_explore1Vis").text(option.buildingName);
+
+                //scroll back to top in case it only shows blank
+                var top = rank_vis.getYPosition(option.buildingName) - 320;
+                if(!top || top < 0) {top = 0}
+                $("#rankVis").animate({ scrollTop: top} );
+            });
+
+            d3.select("#rank_opt").on("change", function() {
+                readOption();
+                rank_vis.onSelectionChange();
+                var top = rank_vis.getYPosition(option.buildingName) - 320;
+                if(!top || top < 0) {top = 0}
+                $("#rankVis").animate({ scrollTop: top} );
+
+            });
+
+
+            // Explore 1 Vis onchange
+            d3.select("#explore1Vis").on("change", function () {
+                explore1_vis.onSelectionChange()
+            });
+
+        }
+
+
+
+        // call this function after both files are loaded -- error should be "null" if no error
+        var dataLoaded = function (error, _monthlyEnergy, _weather, _buildingLocation) {
+            if (!error) {
+                monthlyEnergy = _monthlyEnergy;
+                weather = _weather;
+                buildingLocation = _buildingLocation;
+
+                initVis();
+            }
+
+        };
+
+        var startHere = function(){
+            //TODO: load data here and call "dataLoaded" afterwards
+            queue()
+                    .defer(d3.json, "data/json/monthlyEnergy_nameAsKey_0415.json")
+                    .defer(d3.json, "data/json/weather_0423.json")
+                    .defer(d3.json, "data/original/buildingLocation.json")
+                    .await(function(error, file1, file2, file3) { dataLoaded(error, file1, file2, file3);});
+        }
+
+        startHere();
+
+        var readOption = function() {
+            // Read selection values
+            option.buildingEnergyType = d3.select("#building_opt").property('value');
+            option.energyType = d3.select("#energy_opt").property('value');
+            option.buildingFunction = d3.select("#function_opt").property('value');
+            option.sortType = d3.select("#rank_opt").property('value');
+        };
+
+        $('#readMeModal').on('show.bs.modal', function () {
+            $(this).find('.modal-body').css({
+                width:'auto', //probably not needed
+                height:'auto', //probably not needed
+                'max-height':'100%'
+            });
+
+            $(this).find('.modal-dialog').css({
+                width:'450px' //probably not needed
+            });
+        });
+    });
+
+    // ############# Helper Function ##################
+
+    var getInnerWidth = function(element) {
+        var style = window.getComputedStyle(element.node(), null);
+        return parseInt(style.getPropertyValue('width'));
+
+    };
+
+    var linearRegression = function(x, y){
+        var lr = {};
+        var n = y.length;
+        var sum_x = 0;
+        var sum_y = 0;
+        var sum_xy = 0;
+        var sum_xx = 0;
+        var sum_yy = 0;
+
+        for (var i = 0; i < y.length; i++) {
+
+            sum_x += x[i];
+            sum_y += y[i];
+            sum_xy += (x[i]*y[i]);
+            sum_xx += (x[i]*x[i]);
+            sum_yy += (y[i]*y[i]);
+        }
+
+        lr['slope'] = (n * sum_xy - sum_x * sum_y) / (n*sum_xx - sum_x * sum_x);
+        lr['intercept'] = (sum_y - lr.slope * sum_x)/n;
+        lr['r2'] = Math.round(Math.pow((n*sum_xy - sum_x*sum_y)/Math.sqrt((n*sum_xx-sum_x*sum_x)*(n*sum_yy-sum_y*sum_y)),2) * 100) / 100;
+
+        return lr;
+    }
+
+    var placeTooltip = function() {
+
+        $('#Energy_Use_and_Weather').tooltip({
+            placement : 'top',
+            title: "Select a tab. Basic | Explorative"
+        });
+
+        $('#Show_buildings_with_data_of').tooltip({
+            placement : 'bottom',
+            title: "Map and ranking bar chart will show the buildings with the selected energy type."
+        });
+
+        $('#Select_energy_type').tooltip({
+            placement : 'bottom',
+            title: "Ranking, monthly energy use and explorative scatterplot will show the selected energy type."
+        });
+
+        $('#Filter_buildings_by_function').tooltip({
+            placement : 'bottom',
+            title: "Map and ranking bar chart will show the buildings of the selected type."
+        });
+
+        $('#Sort_ranking_by').tooltip({
+            placement : 'bottom',
+            title: "Sort ranking by energy use or building name"
+        });
+
+        $('#Map').tooltip({
+            placement : 'right',
+            title: "Select a building to see its ranking and monthly energy use. Use the control above to filter buildings."
+        });
+
+        $('#Annual_Energy_Ranking').tooltip({
+            placement : 'left',
+            title: "Show the ranking of EUI (Energy Use Intensity, energy use normalized by area) of the selected energy type and building function."
+        });
+
+        $('#Monthly_Energy_Use').tooltip({
+            placement : 'top',
+            title: "Monthly enregy use of Year 2013."
+        });
+
+        $('#Monthly_energy_use_vs').tooltip({
+            placement : 'top',
+            title:'Select a weather variable to explore the relationship between energy use and weather. ' +
+            'Use the control at the top to change energy use type.'
+
+        });
+
+        /*
+        $('#Read_me').tooltip({
+            placement : 'bottom',
+            title: "Use the control bar below to filter buildings and select energy type. Select one building in the map or in the ranking chart. " +
+            "Hover a label or chart title for more information."
+        });*/
+
+
+    }
+
+</script>
+</body>
+</html>
