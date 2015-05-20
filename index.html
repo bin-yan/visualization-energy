@@ -399,10 +399,9 @@
         var startHere = function(){
             //TODO: load data here and call "dataLoaded" afterwards
             queue()
-                    .defer(d3.json, "data/json/monthlyEnergy_nameAsKey_0415.json")
+                    .defer(d3.json, "data/json/monthlyEnergy_nameAsKey_randomized.json")
                     .defer(d3.json, "data/json/weather_0423.json")
-                    .defer(d3.json, "data/original/buildingLocation.json")
-                    .await(function(error, file1, file2, file3) { dataLoaded(error, file1, file2, file3);});
+                    .await(function(error, file1, file2) { dataLoaded(error, file1, file2);});
         }
 
         startHere();
