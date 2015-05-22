@@ -10,7 +10,9 @@
     <script src="libs/jquery/jquery-2.1.1.min.js" charset="utf-8"></script>
     <script src="libs/bootstrap/js/bootstrap.min.js" charset="utf-8"></script>
     <script src="libs/queue/queue.v1.min.js"></script>
-    <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
+    <script type="text/javascript"
+            src="https://maps.googleapis.com/maps/api/js">
+    </script>
 
     <!--Stylesheets-->
     <link rel="stylesheet" type="text/css" href="libs/bootstrap/css/bootstrap.min.css">
@@ -246,15 +248,16 @@
                 for the definition of cooling and heating degrees.
 
             </div>
-
         </div>
-
     </div>
+
+
 
 </div>
 
 <script>
     $(function(){ // this function is called after the HTML document is fully loaded
+
 
         //tooltip
         placeTooltip();
@@ -269,6 +272,8 @@
 
         // call this function after Data is loaded, reformatted and bound to the variables
         var initVis = function(){
+
+
 
             // Read selection values
             d3.select("#energy_opt").property('disabled', true);

@@ -19,7 +19,7 @@ body{
     shape-rendering: crispEdges;
 }
 
-html,body, #map {
+html,body {
     width: 100%;
     height: 100%;
     margin: 0;
@@ -136,6 +136,8 @@ div.tooltip_svg_exploreVis {
     max-height: 400px;
     padding: 15px;
 }
+
+#mapVis { height: 400px; margin: 0px;  padding: 100px;}
 
 
 

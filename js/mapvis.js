@@ -4,10 +4,10 @@ MapVis = function(_parentElement, _monthlyEnergy, _option, _eventHandler){
     this.option = _option;
     this.eventHandler = _eventHandler;
 
-    this.margin = {top: 5, right: 50, bottom: 5, left: 50};
+    this.margin = {top: 0, right: 0, bottom: 0, left: 0};
     this.mapRatio = 0.9451940173623313;
-    this.height = 400;
-    this.width = 400 * this.mapRatio;
+    this.height = 400 - this.margin.top - this.margin.bottom;
+    this.width = getInnerWidth(this.parentElement) - this.margin.left - this.margin.right;
 
     this.wrangleData();
 
@@ -20,34 +20,120 @@ MapVis = function(_parentElement, _monthlyEnergy, _option, _eventHandler){
  */
 MapVis.prototype.initVis = function() {
 
-    this.createScales();
+    var that = this;
 
-    this.svg = this.parentElement.append("svg")
-        .attr("width", this.width + this.margin.left + this.margin.right)
-        .attr("height", this.height + this.margin.top + this.margin.bottom)
-        .append("g")
-        .attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")");
+    var harvardYard = new google.maps.LatLng(42.374332, -71.116789);
 
-    //need to change it to scalable.
-    this.svg.append("svg:image")
-        .attr('width', 467)
-        .attr('height', 410)
-        .attr("x",-40)
-        .attr("y",-5)
-        .attr("xlink:href", "figure/map3.jpg")
-        .style("opacity", 0.6);
-		
-	this.svg.append("text")
-        .attr("y", 400)
-        .attr("x", -35)
-        //.attr("dy", ".71em")
-        .style("text-anchor", "start")
-        .style("font-size","9px")
-		.text("Note: Building circle sized by building area.");
+    var MY_MAPTYPE_ID = 'ltc_style';
 
-    this.createNodes();
+    var featureOpts = [
+        /*
+        {
+            featureType: "all",
+            elementType: "all",
+            stylers: [
+                { saturation: -80 },
+                { lightness: 30 }
+            ]
+        },
 
-    this.updateVis('Gund Hall');
+        {
+            elementType: 'labels',
+            stylers: [
+                { visibility: 'off' }
+            ]
+        },
+        {
+            featureType: "road",
+            elementType: "geometry",
+            stylers: [
+                { color: "#FDF5E6" },
+                { lightness: 50 },
+                { visibility: "simplified" }
+            ]
+        },
+        {
+            featureType: "landscape.man_made",
+            elementType: "geometry.fill",
+            stylers: [
+                { color: "#e3e2dd" }
+            ]
+        },
+        {
+            featureType: "landscape.man_made",
+            elementType: "geometry.stroke",
+            stylers: [
+                { color: "#e3e2dd" }
+            ]
+        },
+        {
+            featureType: "landscape.natural",
+            elementType: "geometry.fill",
+            stylers: [
+                { color: "#e3e2dd" }
+            ]
+        }*/
+    ];
+
+    var mapOptions = {
+        zoom: 15,
+        center: harvardYard ,
+        mapTypeControlOptions: {
+            mapTypeIds: [google.maps.MapTypeId.ROADMAP, MY_MAPTYPE_ID]
+        },
+        mapTypeId: MY_MAPTYPE_ID,
+        panControl: true,
+        zoomControl: true,
+        mapTypeControl: false,
+        scaleControl: false,
+        streetViewControl: false,
+        overviewMapControl: false,
+        scrollwheel: false,
+        draggable: false,
+        disableDefaultUI: true,
+        disableDoubleClickZoom: true
+    };
+
+    var mapContainer = this.parentElement.node();
+    this.map = new google.maps.Map(mapContainer, mapOptions);
+
+    var styledMapOptions = {
+        name: 'Harvard Map'
+    };
+
+    var ltcMapType = new google.maps.StyledMapType(featureOpts, styledMapOptions);
+
+    this.map.mapTypes.set(MY_MAPTYPE_ID, ltcMapType);
+
+    this.overlay = new google.maps.OverlayView();
+
+    this.overlay.onAdd = function() {
+        that.svg = d3.select(this.getPanes().overlayMouseTarget).append("svg");
+
+
+        that.xScale = d3.scale.linear().domain([0, that.width]).range([0, that.width]),
+            that.yScale = d3.scale.linear().domain([that.height, 0]).range([that.height, 0]);
+
+
+        that.svg.style("position", "absolute")
+            .style("top", 0)
+            .style("left", 0)
+            .style("width", that.width)
+            .style("height", that.height)
+            .attr("viewBox","0 0 " + that.width + " " + that.height);
+
+        that.overlay.draw = function() {
+            that.projection = this.getProjection();
+
+            that.createNodes(that);
+
+            that.updateVis();
+        };
+    };
+
+    this.overlay.setMap(this.map);
+
+    //this.updateVis('Gund Hall');
 
 }
 
@@ -101,11 +187,13 @@ MapVis.prototype.wrangleData= function(){
 MapVis.prototype.updateVis = function(_buildingName) {
     var that = this;
     var selBuildingName = _buildingName;
-    var nodes = d3.selectAll(".node")
-    var circles = nodes.select("circle")
+    var nodes = d3.selectAll(".node");
+    var circles = nodes.select("circle");
     var function_opt = d3.select("#function_opt").property('value')
     nodes.style("visibility", "visible")
 	    .on('mouseover', function(){d3.select(this).style('cursor', 'pointer');})
+
+    nodes.each(transform);
 
     //show or hide buildings based on building data type
     switch(d3.select("#building_opt").property('value')){
@@ -150,72 +238,44 @@ MapVis.prototype.updateVis = function(_buildingName) {
         nodes.filter(function (d){return d.buildingFunction !== function_opt}).style("visibility", "hidden")
     }
 
+    function transform(d) {
+
+
+        d = new google.maps.LatLng(d.latitude, d.longitude);
+        d = that.projection.fromLatLngToDivPixel(d);
+
+        return d3.select(this)
+            .attr("transform", function() {
+                return "translate("+ d.x+","+ d.y+")";
+            });;
+    }
+
 
 }
 
-MapVis.prototype.createScales = function() {
-    var that = this;
 
-    //Calculate the parameters needed to layout the buildings as nodes according to lat/lng
-    this.longitudes = this.displayData.map(function (d) {return d.longitude});
-    this.latitudes = this.displayData.map(function (d) {return d.latitude})
-
-    //get the max and min values
-    longitudeMax = d3.max(this.longitudes);
-    longitudeMin = d3.min(this.longitudes);
-    latitudeMax = d3.max(this.latitudes);
-    latitudeMin = d3.min(this.latitudes);
-
-    longitudeScale = d3.scale.linear()
-        .domain([longitudeMin, longitudeMax])
-        .range([0, that.width])
-
-    latitudeScale = d3.scale.linear()
-        .domain([latitudeMin, latitudeMax])
-        .range([this.height, 0])
-
-    //calculate the scale for the area of each building ie size of each node
-    this.areas = this.displayData.map(function (d) {return d.area})
-    areaMax = d3.max(this.areas)
-    areaMin = d3.min(this.areas)
-
-    areaScale = d3.scale.linear()
-        .domain([areaMin, areaMax])
-        .range([3,8])
-
-    //calculate color scale for nodes based on energy consumption
-    this.energies = this.displayData.map(function (d) {return d.totalElectric})
-    energyMax = d3.max(this.energies)
-    energyMin = d3.min(this.energies)
-    colorScale = d3.scale.linear()
-        .domain([energyMin, energyMax])
-        .range(["red", "green"])
-
-    this.thousandNumFormat = d3.format(",d")
-}
-
-MapVis.prototype.createNodes = function() {
-    var that = this;
+MapVis.prototype.createNodes = function(that) {
 
     //create a div holder for the tooltip that shows the building name
+    this.thousandNumFormat = d3.format(",d")
+
     var div = d3.select("body").append("div")
         .attr("class", "tooltip_svg")
         .style("opacity", 0);
 
-    node = this.svg.selectAll(".node")
-        .data(this.displayData)
+    var node = this.svg.selectAll(".node")
+        .data(that.displayData)
         .enter()
         .append("g")
-        .attr("class", "node")
-        .attr("x", function(d){return longitudeScale(d['longitude']);})
-        .attr("y", function(d){return latitudeScale(d['latitude']);})
+        .attr("class", "node");
 
-    node.append("circle").attr("r", function (d) {return areaScale(d.area) })
+    node.append("circle").attr("r", function (d) {return 5 })
         .attr("fill", "green")
         .attr("fill-opacity", 0.9)// Bin changed from 0.6 to 0.9
         .on("click", function (d){
             clickedBuilding(d.name)
         })
+
         .on("mouseover", function(d) {
             div.transition()
                 .duration(200)
@@ -236,12 +296,6 @@ MapVis.prototype.createNodes = function() {
                 .style("opacity", 0);
         });
 
-    node
-        //.transition()
-        //.duration(500)
-        .attr("transform", function(d) {
-            return "translate("+this.attributes.x.value+","+this.attributes.y.value+")";
-        });
 
     function clickedBuilding(buildingName) {
 
