@@ -110,9 +110,8 @@ MapVis.prototype.initVis = function() {
     this.overlay.onAdd = function() {
         that.svg = d3.select(this.getPanes().overlayMouseTarget).append("svg");
 
-
-        that.xScale = d3.scale.linear().domain([0, that.width]).range([0, that.width]),
-            that.yScale = d3.scale.linear().domain([that.height, 0]).range([that.height, 0]);
+        //that.xScale = d3.scale.linear().domain([0, that.width]).range([0, that.width]),
+        //    that.yScale = d3.scale.linear().domain([that.height, 0]).range([that.height, 0]);
 
 
         that.svg.style("position", "absolute")
@@ -122,10 +121,11 @@ MapVis.prototype.initVis = function() {
             .style("height", that.height)
             .attr("viewBox","0 0 " + that.width + " " + that.height);
 
+        that.createNodes();
+
         that.overlay.draw = function() {
             that.projection = this.getProjection();
 
-            that.createNodes(that);
 
             that.updateVis();
         };
@@ -254,7 +254,25 @@ MapVis.prototype.updateVis = function(_buildingName) {
 }
 
 
-MapVis.prototype.createNodes = function(that) {
+MapVis.prototype.createNodes = function() {
+
+    var that = this;
+
+    this.svg.append("text")
+        .attr("y", 380)
+        .attr("x", that.width)
+        .style("text-anchor", "end")
+        .style("font-size","11px")
+        .style("font-weight","bold")
+        .text("Note: Building circle sized by building area.");
+
+    this.areas = this.displayData.map(function (d) {return d.area})
+    var areaMax = d3.max(this.areas)
+    var areaMin = d3.min(this.areas)
+
+    var areaScale = d3.scale.linear()
+        .domain([areaMin, areaMax])
+        .range([3,8])
 
     //create a div holder for the tooltip that shows the building name
     this.thousandNumFormat = d3.format(",d")
@@ -269,7 +287,7 @@ MapVis.prototype.createNodes = function(that) {
         .append("g")
         .attr("class", "node");
 
-    node.append("circle").attr("r", function (d) {return 5 })
+    node.append("circle").attr("r", function (d) {return areaScale(d.area) })
         .attr("fill", "green")
         .attr("fill-opacity", 0.9)// Bin changed from 0.6 to 0.9
         .on("click", function (d){
