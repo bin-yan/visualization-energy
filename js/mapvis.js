@@ -1,3 +1,5 @@
+var circlePadding = 2;
+
 MapVis = function(_parentElement, _monthlyEnergy, _option, _eventHandler){
     this.parentElement = _parentElement;
     this.monthlyEnergy = _monthlyEnergy;
@@ -89,7 +91,7 @@ MapVis.prototype.initVis = function() {
         streetViewControl: false,
         overviewMapControl: false,
         scrollwheel: false,
-        draggable: false,
+        draggable: true,
         disableDefaultUI: true,
         disableDoubleClickZoom: true
     };
@@ -108,18 +110,8 @@ MapVis.prototype.initVis = function() {
     this.overlay = new google.maps.OverlayView();
 
     this.overlay.onAdd = function() {
-        that.svg = d3.select(this.getPanes().overlayMouseTarget).append("svg");
-
-        //that.xScale = d3.scale.linear().domain([0, that.width]).range([0, that.width]),
-        //    that.yScale = d3.scale.linear().domain([that.height, 0]).range([that.height, 0]);
-
-
-        that.svg.style("position", "absolute")
-            .style("top", 0)
-            .style("left", 0)
-            .style("width", that.width)
-            .style("height", that.height)
-            .attr("viewBox","0 0 " + that.width + " " + that.height);
+        that.svg = d3.select(this.getPanes().overlayMouseTarget).append("div")
+            .style("position","absolute");
 
         that.createNodes();
 
@@ -240,14 +232,13 @@ MapVis.prototype.updateVis = function(_buildingName) {
 
     function transform(d) {
 
-
-        d = new google.maps.LatLng(d.latitude, d.longitude);
-        d = that.projection.fromLatLngToDivPixel(d);
+        var p = new google.maps.LatLng(d.latitude, d.longitude);
+        p = that.projection.fromLatLngToDivPixel(p);
 
         return d3.select(this)
-            .attr("transform", function() {
-                return "translate("+ d.x+","+ d.y+")";
-            });;
+            .style("left", p.x - that.areaScale(d.area) - circlePadding + "px")
+            .style("top", p.y - that.areaScale(d.area) - circlePadding + "px");
+
     }
 
 
@@ -258,6 +249,7 @@ MapVis.prototype.createNodes = function() {
 
     var that = this;
 
+    /*
     this.svg.append("text")
         .attr("y", 380)
         .attr("x", that.width)
@@ -265,12 +257,13 @@ MapVis.prototype.createNodes = function() {
         .style("font-size","11px")
         .style("font-weight","bold")
         .text("Note: Building circle sized by building area.");
+    */
 
     this.areas = this.displayData.map(function (d) {return d.area})
     var areaMax = d3.max(this.areas)
     var areaMin = d3.min(this.areas)
 
-    var areaScale = d3.scale.linear()
+    this.areaScale = d3.scale.linear()
         .domain([areaMin, areaMax])
         .range([3,8])
 
@@ -284,10 +277,16 @@ MapVis.prototype.createNodes = function() {
     var node = this.svg.selectAll(".node")
         .data(that.displayData)
         .enter()
-        .append("g")
-        .attr("class", "node");
+        .append("svg:svg")
+        .style("width", function(d) {return (that.areaScale(d.area) + circlePadding) * 2 + "px";})
+        .style("height", function(d) {return (that.areaScale(d.area) + circlePadding) * 2 + "px";})
+        .style("position", "absolute")
+        .attr("class", "node")
 
-    node.append("circle").attr("r", function (d) {return areaScale(d.area) })
+    node.append("svg:circle")
+        .attr("r", function (d) {return that.areaScale(d.area) })
+        .attr("cx", function (d) {return that.areaScale(d.area) + circlePadding})
+        .attr("cy", function (d) {return that.areaScale(d.area) + circlePadding})
         .attr("fill", "green")
         .attr("fill-opacity", 0.9)// Bin changed from 0.6 to 0.9
         .on("click", function (d){
