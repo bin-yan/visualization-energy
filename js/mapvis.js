@@ -7,7 +7,6 @@ MapVis = function(_parentElement, _monthlyEnergy, _option, _eventHandler){
     this.eventHandler = _eventHandler;
 
     this.margin = {top: 0, right: 0, bottom: 0, left: 0};
-    this.mapRatio = 0.9451940173623313;
     this.height = 400 - this.margin.top - this.margin.bottom;
     this.width = getInnerWidth(this.parentElement) - this.margin.left - this.margin.right;
 
@@ -29,7 +28,7 @@ MapVis.prototype.initVis = function() {
     var MY_MAPTYPE_ID = 'ltc_style';
 
     var featureOpts = [
-        /*
+
         {
             featureType: "all",
             elementType: "all",
@@ -39,12 +38,15 @@ MapVis.prototype.initVis = function() {
             ]
         },
 
+        /*
         {
             elementType: 'labels',
             stylers: [
                 { visibility: 'off' }
             ]
-        },
+        },*/
+
+
         {
             featureType: "road",
             elementType: "geometry",
@@ -74,7 +76,7 @@ MapVis.prototype.initVis = function() {
             stylers: [
                 { color: "#e3e2dd" }
             ]
-        }*/
+        }
     ];
 
     var mapOptions = {
@@ -117,15 +119,12 @@ MapVis.prototype.initVis = function() {
 
         that.overlay.draw = function() {
             that.projection = this.getProjection();
-
-
-            that.updateVis();
+            that.updateVis('Gund Hall');
         };
     };
 
     this.overlay.setMap(this.map);
 
-    //this.updateVis('Gund Hall');
 
 }
 
@@ -182,10 +181,20 @@ MapVis.prototype.updateVis = function(_buildingName) {
     var nodes = d3.selectAll(".node");
     var circles = nodes.select("circle");
     var function_opt = d3.select("#function_opt").property('value')
-    nodes.style("visibility", "visible")
-	    .on('mouseover', function(){d3.select(this).style('cursor', 'pointer');})
 
-    nodes.each(transform);
+    nodes
+        .each(transform)
+        .style("visibility", "visible")
+        .style("width", function(d) {return (that.areaScale(d.area) + circlePadding) * 2 + "px";})
+        .style("height", function(d) {return (that.areaScale(d.area) + circlePadding) * 2 + "px";})
+        .on('mouseover', function(){d3.select(this).style('cursor', 'pointer');});
+
+
+    nodes.select("circle")
+        .transition()  // this is must-have
+        .attr("r", function (d) {return that.areaScale(d.area) })
+        .attr("cx", function (d) {return that.areaScale(d.area) + circlePadding})
+        .attr("cy", function (d) {return that.areaScale(d.area) + circlePadding});
 
     //show or hide buildings based on building data type
     switch(d3.select("#building_opt").property('value')){
@@ -216,11 +225,41 @@ MapVis.prototype.updateVis = function(_buildingName) {
             nodes.filter(function (d){return d}).style("visibility", "visible")
 
     }
-    nodes.filter(function (d){return d.name == selBuildingName})
-        .select("circle")
+
+    var selectedNode;
+    selectedNode = nodes.filter(function (d) {
+        return d.name == selBuildingName
+    });
+
+    selectedNode
+        .each(transformSelectedSvg)
+        .style("width", function(d) {return (20 + circlePadding) * 2 + "px";})
+        .style("height", function(d) {return (20 + circlePadding) * 2 + "px";})
+
+    selectedNode.select("circle")
         .style("fill", "#FFFF00")
         .style("stroke", "black")
-        .style("stroke-width", "2px");
+        .style("stroke-width", "2px")
+        .attr("cx", function (d) {return 20 + circlePadding})
+        .attr("cy", function (d) {return 20 + circlePadding})
+        .each(pulse);
+
+
+
+    function pulse(d) {
+
+        var circle = d3.select(this);
+        (function repeat() {
+            circle = circle.transition()
+                .duration(1000)
+                .attr("r", 20)
+                .transition()
+                .duration(1000)
+                .attr("r", that.areaScale(d.area))
+                .ease('sine')
+                .each("end", function() { if (this.__transition__.count < 2) repeat(); }); //important
+        })();
+    }
 
     //show or hide buildings based on building function selector
     if(function_opt == 'all'){
@@ -238,6 +277,17 @@ MapVis.prototype.updateVis = function(_buildingName) {
         return d3.select(this)
             .style("left", p.x - that.areaScale(d.area) - circlePadding + "px")
             .style("top", p.y - that.areaScale(d.area) - circlePadding + "px");
+
+    }
+
+    function transformSelectedSvg(d) {
+
+        var p = new google.maps.LatLng(d.latitude, d.longitude);
+        p = that.projection.fromLatLngToDivPixel(p);
+
+        return d3.select(this)
+            .style("left", p.x - 20 - circlePadding + "px")
+            .style("top", p.y - 20 - circlePadding + "px");
 
     }
 
@@ -278,21 +328,15 @@ MapVis.prototype.createNodes = function() {
         .data(that.displayData)
         .enter()
         .append("svg:svg")
-        .style("width", function(d) {return (that.areaScale(d.area) + circlePadding) * 2 + "px";})
-        .style("height", function(d) {return (that.areaScale(d.area) + circlePadding) * 2 + "px";})
         .style("position", "absolute")
         .attr("class", "node")
 
     node.append("svg:circle")
-        .attr("r", function (d) {return that.areaScale(d.area) })
-        .attr("cx", function (d) {return that.areaScale(d.area) + circlePadding})
-        .attr("cy", function (d) {return that.areaScale(d.area) + circlePadding})
         .attr("fill", "green")
         .attr("fill-opacity", 0.9)// Bin changed from 0.6 to 0.9
         .on("click", function (d){
             clickedBuilding(d.name)
         })
-
         .on("mouseover", function(d) {
             div.transition()
                 .duration(200)
