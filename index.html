@@ -68,11 +68,11 @@
 
 
         <div class="row">
-            <p> The following visualization displays the <b>synthetic</b> energy consumption of 151 buildings
+            <p> The following visualization displays the energy consumption of 151 buildings
                 at Harvard. | <a href="#" id="Read_me" data-toggle="modal"
                                  data-target="#readMeModal">Read me</a> |
-                <a href="#" id="disclaimer" data-toggle="modal"
-                   data-target="#disclaimerModal">Disclaimer</a> |
+                <!--a href="#" id="disclaimer" data-toggle="modal"
+                   data-target="#disclaimerModal">Disclaimer</a-->
                 <a href="https://youtu.be/AGnx9alurKk" target="_blank" id="Youtube_demo">Youtube demo</a>
             </p>
         </div>
@@ -96,7 +96,7 @@
             </div>
         </div>
 
-        <div class="modal fade" id="disclaimerModal">
+        <!--div class="modal fade" id="disclaimerModal">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -111,7 +111,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </div-->
 
         <div class="row">
 
@@ -423,7 +423,7 @@
         var startHere = function(){
             //TODO: load data here and call "dataLoaded" afterwards
             queue()
-                    .defer(d3.json, "data/json/monthlyEnergy_nameAsKey_randomized.json")
+                    .defer(d3.json, "data/json/monthlyEnergy_nameAsKey_0415.json")
                     .defer(d3.json, "data/json/weather_0423.json")
                     .await(function(error, file1, file2) { dataLoaded(error, file1, file2);});
         }
