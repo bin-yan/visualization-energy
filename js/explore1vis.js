@@ -117,6 +117,8 @@ Explore1Vis.prototype.wrangleData= function(_filterFunction){
     var data_x = this.weather["monthly"];
     var area = this.data[this.option.buildingName]['area'];
 
+    console.log(data_x)
+
     var k = 0;
     for (i = 0; i < data_y.length; i++) for (j = k; j < data_x.length; j++) {
         var y_time = dateFormatter.parse(data_y[i].month);
@@ -129,6 +131,8 @@ Explore1Vis.prototype.wrangleData= function(_filterFunction){
             continue;
         }
     }
+
+    console.log(this.displayData)
 };
 
 

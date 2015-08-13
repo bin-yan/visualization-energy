@@ -194,27 +194,28 @@ MapVis.prototype.updateVis = function(_buildingName) {
         .transition()  // this is must-have
         .attr("r", function (d) {return that.areaScale(d.area) })
         .attr("cx", function (d) {return that.areaScale(d.area) + circlePadding})
-        .attr("cy", function (d) {return that.areaScale(d.area) + circlePadding});
+        .attr("cy", function (d) {return that.areaScale(d.area) + circlePadding})
+        .style("opacity", 0.7);
 
     //show or hide buildings based on building data type
     switch(d3.select("#building_opt").property('value')){
         case 'chilled water':
-            circles.style("fill", "#4682b4").style("stroke-width", "0px")
+            circles.style("fill", chilledWaterColor).style("stroke-width", "0px")
             nodes.filter(function (d){return d['totalChilledWater'] == 0}).style("visibility", "hidden")
             break
 
         case 'steam':
-            circles.style("fill", "#F27066").style("stroke-width", "0px");
+            circles.style("fill", steamColor).style("stroke-width", "0px");
             nodes.filter(function (d){return d['totalSteam'] == 0}).style("visibility", "hidden")
             break
 
         case 'electric':
-            circles.style("fill", "green").style("stroke-width", "0px");
+            circles.style("fill", electricColor).style("stroke-width", "0px");
             nodes.filter(function (d){return d['totalElectric'] == 0}).style("visibility", "hidden")
             break
 
         case 'all':
-            circles.style("fill", "purple").style("stroke-width", "0px");
+            circles.style("fill", allColor).style("stroke-width", "0px");
             nodes.filter(function (d){return d['totalElectric'] == 0}).style("visibility", "hidden")
             nodes.filter(function (d){return d['totalSteam'] == 0}).style("visibility", "hidden")
             nodes.filter(function (d){return d['totalChilledWater'] == 0}).style("visibility", "hidden")
@@ -235,11 +236,40 @@ MapVis.prototype.updateVis = function(_buildingName) {
         .each(transformSelectedSvg)
         .style("width", function(d) {return (20 + circlePadding) * 2 + "px";})
         .style("height", function(d) {return (20 + circlePadding) * 2 + "px";})
+        .style("opacity", 1);
+
+
+    //var electricColor = "#ABDB25"
 
     selectedNode.select("circle")
-        .style("fill", "#FFFF00")
-        .style("stroke", "black")
-        .style("stroke-width", "2px")
+        .style("fill", function(d) {
+            var color;
+            switch(d3.select("#building_opt").property('value')){
+
+                case 'chilled water':
+                    color = chilledWaterColor;
+                    break;
+
+                case 'steam':
+                    color = steamColor;
+                    break;
+
+                case 'electric':
+                    color = electricColor;
+                    break;
+
+                case 'all':
+                    color = allColor;
+                    break;
+
+                default:
+                    color = allColor;
+
+            }
+            return color;
+        })
+        //.style("stroke", "#666666")
+        //.style("stroke-width", "1px")
         .attr("cx", function (d) {return 20 + circlePadding})
         .attr("cy", function (d) {return 20 + circlePadding})
         .each(pulse);
@@ -252,7 +282,7 @@ MapVis.prototype.updateVis = function(_buildingName) {
         (function repeat() {
             circle = circle.transition()
                 .duration(1000)
-                .attr("r", 20)
+                .attr("r", 15)
                 .transition()
                 .duration(1000)
                 .attr("r", that.areaScale(d.area))
@@ -332,8 +362,8 @@ MapVis.prototype.createNodes = function() {
         .attr("class", "node")
 
     node.append("svg:circle")
-        .attr("fill", "green")
-        .attr("fill-opacity", 0.9)// Bin changed from 0.6 to 0.9
+        .attr("fill", "#A4B161")
+        .attr("fill-opacity", 1)// Bin changed from 0.6 to 0.9
         .on("click", function (d){
             clickedBuilding(d.name)
         })
